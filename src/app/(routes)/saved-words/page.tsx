@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { Toaster, toast } from 'react-hot-toast';
 
 interface SavedWord {
   id: number;
@@ -69,6 +69,7 @@ export default function SavedWordsPage() {
       setFilteredWords(data.words);
     } catch (error) {
       console.error('Error fetching words:', error);
+      toast.error('Failed to load words');
     } finally {
       setLoading(false);
     }
@@ -95,12 +96,13 @@ export default function SavedWordsPage() {
         setWords([data.word, ...words]);
         setFormData({ word: '', meaning: '', notes: '' });
         setShowAddModal(false);
+        toast.success('Word added successfully!');
       } else {
-        alert(data.error || 'Failed to add word');
+        toast.error(data.error || 'Failed to add word');
       }
     } catch (error) {
       console.error('Error adding word:', error);
-      alert('Failed to add word');
+      toast.error('Failed to add word');
     }
   };
 
@@ -127,18 +129,53 @@ export default function SavedWordsPage() {
         setWords(words.map(w => w.id === editingWord.id ? data.word : w));
         setFormData({ word: '', meaning: '', notes: '' });
         setEditingWord(null);
+        toast.success('Word updated successfully!');
       } else {
-        alert(data.error || 'Failed to update word');
+        toast.error(data.error || 'Failed to update word');
       }
     } catch (error) {
       console.error('Error updating word:', error);
-      alert('Failed to update word');
+      toast.error('Failed to update word');
     }
   };
 
   const handleDeleteWord = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this word?')) return;
+    // Show custom confirmation toast
+    toast((t) => (
+      <div className="flex flex-col gap-3">
+        <p className="text-white font-semibold">Are you sure you want to delete this word?</p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              toast.dismiss(t.id);
+              confirmDelete(id);
+            }}
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+          >
+            Delete
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    ), {
+      duration: 5000,
+      position: 'top-center',
+      style: {
+        background: '#1a1a1a',
+        border: '1px solid rgba(239, 68, 68, 0.3)',
+        borderRadius: '12px',
+        padding: '16px',
+        minWidth: '320px',
+      },
+    });
+  };
 
+  const confirmDelete = async (id: number) => {
     const token = localStorage.getItem('token');
     if (!token) return;
 
@@ -152,12 +189,13 @@ export default function SavedWordsPage() {
 
       if (response.ok) {
         setWords(words.filter(w => w.id !== id));
+        toast.success('Word deleted successfully!');
       } else {
-        alert('Failed to delete word');
+        toast.error('Failed to delete word');
       }
     } catch (error) {
       console.error('Error deleting word:', error);
-      alert('Failed to delete word');
+      toast.error('Failed to delete word');
     }
   };
 
@@ -183,6 +221,33 @@ export default function SavedWordsPage() {
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Toast Notifications */}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#1a1a1a',
+            color: '#fff',
+            border: '1px solid rgba(168, 85, 247, 0.3)',
+            borderRadius: '12px',
+            padding: '16px',
+          },
+          success: {
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute w-96 h-96 bg-purple-600 rounded-full blur-3xl opacity-20 -top-48 -left-48 animate-pulse"></div>
