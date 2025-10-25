@@ -2,7 +2,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X, LogOut, Home, BookOpen, Languages, FileText, BookMarked, PenTool } from 'lucide-react';
+import { Menu, X, LogOut, Home, BookOpen, Languages, FileText, BookMarked, PenTool, Mic } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 
 export default function Navbar() {
@@ -43,7 +43,6 @@ export default function Navbar() {
       className={`fixed top-0 left-0 w-full text-white shadow-lg transition-all duration-300 z-50 ${
         scrolled 
           ? 'bg-black/95 backdrop-blur-xl border-b border-purple-500/20' 
-          // : 'bg-black/90 backdrop-blur-md'
           : 'bg-transparent'
       }`}
     >
@@ -121,6 +120,16 @@ export default function Navbar() {
                 >
                   <Languages className="w-4 h-4" />
                   Translate
+                </Link>
+
+                <Link
+                  href="/speaking-practice"
+                  className={`px-4 py-2 text-sm font-medium hover:bg-blue-500/20 hover:scale-105 transform transition-all duration-300 rounded-lg flex items-center gap-2 ${
+                    isActive('/speaking-practice') ? 'bg-blue-500/20 text-blue-300' : ''
+                  }`}
+                >
+                  <Mic className="w-4 h-4" />
+                  Speaking
                 </Link>
 
                 <Link
@@ -230,6 +239,17 @@ export default function Navbar() {
                   >
                     <Languages className="w-4 h-4" />
                     Translate
+                  </Link>
+
+                  <Link
+                    href="/speaking-practice"
+                    className={`block px-3 py-2 text-base font-medium hover:bg-blue-500/20 rounded-lg transition-colors duration-300 flex items-center gap-2 ${
+                      isActive('/speaking-practice') ? 'bg-blue-500/20 text-blue-300' : ''
+                    }`}
+                    onClick={toggleMenu}
+                  >
+                    <Mic className="w-4 h-4" />
+                    Speaking Practice
                   </Link>
 
                   <Link
