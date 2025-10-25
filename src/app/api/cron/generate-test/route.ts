@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { dailyTests } from '@/db/schema';
 import { generateDailyTest } from '@/lib/gemini';
-import { eq, and, gte, lt } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 export async function GET(req: NextRequest) {
   // Verify cron secret to prevent unauthorized access
@@ -13,55 +13,34 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    const hour = now.getUTCHours();
-    
-    // Determine test slot: morning (0-11 UTC) or evening (12-23 UTC)
-    const testSlot = hour < 12 ? 'morning' : 'evening';
-    const testIdentifier = `${today}-${testSlot}`;
+    const today = new Date().toISOString().split('T')[0];
 
-    // Check if test already exists for this slot today
+    // Check if test already exists for today
     const existingTest = await db
       .select()
       .from(dailyTests)
       .where(eq(dailyTests.testDate, today))
-      .limit(2); // Get all tests for today
+      .limit(1);
 
-    // Check if this specific slot already has a test
-    const slotExists = existingTest.some(test => {
-      const testWords = JSON.parse(test.words);
-      return testWords.slot === testSlot;
-    });
-
-    if (slotExists) {
+    if (existingTest.length > 0) {
       return NextResponse.json({ 
-        message: `Test already exists for ${testSlot} slot`,
-        date: today,
-        slot: testSlot
+        message: 'Test already exists for today',
+        date: today 
       });
     }
 
     // Generate new test using Gemini
     const words = await generateDailyTest();
-    
-    // Add slot information to the test data
-    const testData = {
-      slot: testSlot,
-      questions: words,
-      generatedAt: now.toISOString()
-    };
 
     // Store in database
     await db.insert(dailyTests).values({
       testDate: today,
-      words: JSON.stringify(testData),
+      words: JSON.stringify(words),
     });
 
     return NextResponse.json({ 
       message: 'Daily test generated successfully',
       date: today,
-      slot: testSlot,
       wordCount: words.length
     });
   } catch (error) {
@@ -73,21 +52,15 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Manual trigger for testing
+// Manual trigger for testing (remove in production or add authentication)
 export async function POST(req: NextRequest) {
   try {
     const today = new Date().toISOString().split('T')[0];
     const words = await generateDailyTest();
-    
-    const testData = {
-      slot: 'manual',
-      questions: words,
-      generatedAt: new Date().toISOString()
-    };
 
     await db.insert(dailyTests).values({
       testDate: today,
-      words: JSON.stringify(testData),
+      words: JSON.stringify(words),
     });
 
     return NextResponse.json({ 
