@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { Toaster, toast } from 'react-hot-toast';
 
 interface WordTest {
   word: string;
@@ -64,6 +65,7 @@ export default function TestPage() {
 
       if (response.status === 401) {
         localStorage.removeItem('token');
+        toast.error('Session expired. Please sign in again.');
         router.push('/signin');
         return;
       }
@@ -81,6 +83,7 @@ export default function TestPage() {
     } catch (error) {
       console.error('Error fetching test:', error);
       setError('Failed to load test');
+      toast.error('Failed to load test. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -90,11 +93,15 @@ export default function TestPage() {
     const newAnswers = [...answers];
     newAnswers[currentQuestion] = answer;
     setAnswers(newAnswers);
+    toast.success('Answer selected!', { duration: 1000 });
   };
 
   const handleSaveWord = async (word: WordTest) => {
     const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!token) {
+      toast.error('Please sign in to save words.');
+      return;
+    }
 
     setSavingWord(word.word);
 
@@ -115,12 +122,16 @@ export default function TestPage() {
 
       if (response.ok) {
         setSavedWordIds(prev => new Set(prev).add(word.word));
+        toast.success(`"${word.word}" saved successfully!`, {
+          icon: '📚',
+          duration: 2000,
+        });
       } else {
-        alert(data.error || 'Failed to save word');
+        toast.error(data.error || 'Failed to save word');
       }
     } catch (error) {
       console.error('Error saving word:', error);
-      alert('Failed to save word');
+      toast.error('Failed to save word. Please try again.');
     } finally {
       setSavingWord(null);
     }
@@ -140,14 +151,20 @@ export default function TestPage() {
 
   const handleSubmit = async () => {
     if (answers.some(a => !a)) {
-      alert('Please answer all questions before submitting');
+      toast.error('Please answer all questions before submitting!', {
+        icon: '⚠️',
+        duration: 3000,
+      });
       return;
     }
 
     const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!token) {
+      toast.error('Session expired. Please sign in again.');
+      return;
+    }
 
-    try {
+    const submitPromise = async () => {
       const response = await fetch(`/api/tests/${testId}/submit`, {
         method: 'POST',
         headers: {
@@ -157,18 +174,36 @@ export default function TestPage() {
         body: JSON.stringify({ answers }),
       });
 
+      if (!response.ok) {
+        throw new Error('Failed to submit test');
+      }
+
       const data = await response.json();
       setResults(data);
       setShowResults(true);
-    } catch (error) {
-      console.error('Error submitting test:', error);
-      alert('Failed to submit test');
-    }
+      return data;
+    };
+
+    toast.promise(
+      submitPromise(),
+      {
+        loading: 'Submitting your test...',
+        success: (data) => `Test submitted! Score: ${data.score}/${data.totalQuestions}`,
+        error: 'Failed to submit test. Please try again.',
+      },
+      {
+        success: {
+          duration: 4000,
+          icon: '🎉',
+        },
+      }
+    );
   };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black px-4">
+        <Toaster position="top-center" reverseOrder={false} />
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 border-purple-500 mx-auto"></div>
           <p className="mt-4 sm:mt-6 text-gray-400 text-base sm:text-lg">Loading test...</p>
@@ -180,6 +215,7 @@ export default function TestPage() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black relative overflow-hidden px-4">
+        <Toaster position="top-center" reverseOrder={false} />
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute w-64 h-64 sm:w-96 sm:h-96 bg-red-600 rounded-full blur-3xl opacity-20 -top-32 -left-32 sm:-top-48 sm:-left-48 animate-pulse"></div>
           <div className="absolute w-64 h-64 sm:w-96 sm:h-96 bg-orange-600 rounded-full blur-3xl opacity-20 top-1/2 -right-32 sm:-right-48 animate-pulse"></div>
@@ -211,6 +247,7 @@ export default function TestPage() {
   if (showResults && results) {
     return (
       <div className="min-h-screen bg-black relative overflow-hidden">
+        <Toaster position="top-center" reverseOrder={false} />
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute w-64 h-64 sm:w-96 sm:h-96 bg-purple-600 rounded-full blur-3xl opacity-20 -top-32 -left-32 sm:-top-48 sm:-left-48 animate-pulse"></div>
           <div className="absolute w-64 h-64 sm:w-96 sm:h-96 bg-indigo-600 rounded-full blur-3xl opacity-20 top-1/2 -right-32 sm:-right-48 animate-pulse"></div>
@@ -347,6 +384,32 @@ export default function TestPage() {
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
+      <Toaster 
+        position="top-center" 
+        reverseOrder={false}
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#1f2937',
+            color: '#fff',
+            border: '1px solid rgba(168, 85, 247, 0.3)',
+            borderRadius: '12px',
+            padding: '16px',
+          },
+          success: {
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute w-64 h-64 sm:w-96 sm:h-96 bg-purple-600 rounded-full blur-3xl opacity-20 -top-32 -left-32 sm:-top-48 sm:-left-48 animate-pulse"></div>
         <div className="absolute w-64 h-64 sm:w-96 sm:h-96 bg-indigo-600 rounded-full blur-3xl opacity-20 top-1/2 -right-32 sm:-right-48 animate-pulse"></div>
