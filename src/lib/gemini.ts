@@ -72,7 +72,6 @@ Rules:
 No explanation, no extra text—only return the JSON array.
 `;
 
-
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -89,19 +88,19 @@ No explanation, no extra text—only return the JSON array.
     // Remove markdown code blocks if present
     const jsonText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     
-    const words: WordTest[] = JSON.parse(jsonText);
+    const apiResponse = JSON.parse(jsonText);
     
     // Validate the response
-    if (!Array.isArray(words) || words.length !== 10) {
+    if (!Array.isArray(apiResponse) || apiResponse.length !== 10) {
       throw new Error('Invalid response format from Gemini');
     }
     
-    // Ensure each word has the correct structure
-    return words.map(word => ({
-      word: word.word,
-      meaning: word.meaning,
-      options: word.options,
-      correctAnswer: word.meaning,
+    // Map the API response to WordTest format
+    return apiResponse.map(item => ({
+      word: item.question,           // The question word
+      meaning: item.correct_answer,  // The correct answer
+      options: item.options,         // All options (including correct answer)
+      correctAnswer: item.correct_answer, // The correct answer
     }));
   } catch (error) {
     console.error('Error generating test with Gemini:', error);
