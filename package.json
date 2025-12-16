@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "groq-sdk": "^0.8.0",
     "@google/genai": "^1.25.0",
     "@neondatabase/serverless": "^1.0.2",
     "bcryptjs": "^3.0.2",
