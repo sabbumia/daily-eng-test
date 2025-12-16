@@ -1,9 +1,11 @@
 // app/api/translate/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenAI } from "@google/genai";
+import { Groq } from 'groq-sdk';
 import { authenticateRequest } from '@/lib/authMiddleware';
 
-const ai = new GoogleGenAI({});
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
 
 export interface TranslationResult {
   originalText: string;
@@ -55,12 +57,21 @@ Rules:
 - For compound sentences, include all important words
 - Return ONLY valid JSON, no additional text`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        }
+      ],
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.5,
+      max_tokens: 2048,
+      top_p: 1,
+      stream: false,
     });
 
-    const responseText = response.text;
+    const responseText = chatCompletion.choices[0]?.message?.content;
     
     if (!responseText) {
       throw new Error('No response from AI model');
